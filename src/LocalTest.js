@@ -1,5 +1,5 @@
 import {useState} from "react";
-import { Button, Modal } from 'antd';
+import { Button, Modal, Checkbox, Form, Input } from 'antd';
 
 function MyButton({param, setParam, fun}) {
     let addPerson = {
@@ -47,6 +47,76 @@ export default function MyApp() {
                 <p>Some contents...</p>
                 <p>Some contents...</p>
             </Modal>
+            <Form
+                name="basic"
+                labelCol={{
+                    span: 8,
+                }}
+                wrapperCol={{
+                    span: 16,
+                }}
+                style={{
+                    maxWidth: 600,
+                }}
+                initialValues={{
+                    remember: true,
+                }}
+                onFinish={(values) => {
+                    console.log('Success:', values);
+                }}
+                onFinishFailed={(errorInfo) => {
+                    console.log('Failed:', errorInfo);
+                }}
+                autoComplete="off"
+            >
+                <Form.Item
+                    label="Username"
+                    name="username"
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please input your username!',
+                        },
+                    ]}
+                >
+                    <Input />
+                </Form.Item>
+
+                <Form.Item
+                    label="Password"
+                    name="password"
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please input your password!',
+                        },
+                    ]}
+                >
+                    <Input.Password />
+                </Form.Item>
+
+                <Form.Item
+                    name="remember"
+                    valuePropName="checked"
+                    wrapperCol={{
+                        offset: 8,
+                        span: 16,
+                    }}
+                >
+                    <Checkbox>Remember me</Checkbox>
+                </Form.Item>
+
+                <Form.Item
+                    wrapperCol={{
+                        offset: 8,
+                        span: 16,
+                    }}
+                >
+                    <Button type="primary" htmlType="submit">
+                        Submit
+                    </Button>
+                </Form.Item>
+            </Form>
         </div>
     );
 }

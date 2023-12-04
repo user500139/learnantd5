@@ -1,31 +1,32 @@
 import React, {useState, useEffect} from 'react';
-import {Button, Form, Input, Table, Space, message, Modal} from 'antd';
+import {Button, Form, Input, Table, Space, message, Modal, Tag, Radio, Select} from 'antd';
 import axios from 'axios';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 
 /**
  * todo list
- * 1.性别映射为Tag
- * 2.删除按钮style 已经二次确认
  * 3.接口调用失败提示
- * 4.性别编辑改为下拉选择器
- * 5.编辑框增加必选功能
+ * 5.编辑框增加必选功能 简单需求竟遇卡点！？ modal组件与form组件组合实现弹窗编辑 提交使用modal组件的onOK而不能使用form组件的submit 导致不能和form组件的onFinish回调联动
  * 6.解决一个动作后 页面不刷新的问题
+ * 7.增加翻页功能
  */
 
-function SearchBar({param, setParam, setPersons, addOrUpdate}) {
+function SearchBar({setPersons, addOrUpdate}) {
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const search = () => {
-        axios.post("http://localhost:8080/person/query", param).then(response => {
-            setPersons(JSON.parse(response.data.data))
-        })
-    };
+    const [param, setParam] = useState({name: "", sex: null});
     const [addPerson, setAddPerson] = useState({
         name: null,
         age: null,
         sex: null,
         introduce: ""
     });
+
+    const search = () => {
+        axios.post("http://localhost:8080/person/query", param).then(response => {
+            setPersons(JSON.parse(response.data.data))
+        })
+    };
 
     useEffect(() => {
         // 组件挂载后执行的操作
@@ -46,15 +47,15 @@ function SearchBar({param, setParam, setPersons, addOrUpdate}) {
                 <Input
                     type="text"
                     value={param.name} placeholder="search with name"
-                    onChange={(e) => setParam({ ...param, name: e.target.value })}
+                    onChange={(e) => setParam({...param, name: e.target.value})}
                 />
             </Form.Item>
-            <Form.Item label="sex">
-                <Input
-                    type="text"
-                    value={param.sex} placeholder="search with sex"
-                    onChange={(e) => setParam({ ...param, sex: e.target.value })}
-                />
+            <Form.Item label="sex" style={{width: '120px'}}>
+                <Select onChange={(e) => setParam({...param, sex: e})}>
+                    <Select.Option value={1}>男</Select.Option>
+                    <Select.Option value={2}>女</Select.Option>
+                    <Select.Option value={0}>不筛选</Select.Option>
+                </Select>
             </Form.Item>
             <Form.Item>
                 <Button type="primary" onClick={() => search(param.name, param.sex)}>
@@ -66,34 +67,54 @@ function SearchBar({param, setParam, setPersons, addOrUpdate}) {
                     Add
                 </Button>
             </Form.Item>
-            <Modal title="添加人员" open={isModalOpen} onOk={() => {
-                addOrUpdate(addPerson);
-                setIsModalOpen(false);
-            }} onCancel={() => setIsModalOpen(false)}>
-                <Form.Item label="姓名" >
-                    <Input type="text"
-                           value={addPerson.name} placeholder="edit name"
-                           onChange={(e) => setAddPerson({ ...addPerson, name: e.target.value })}
-                    />
-                </Form.Item>
-                <Form.Item label="年龄" >
-                    <Input type="text"
-                           value={addPerson.age} placeholder="edit age"
-                           onChange={(e) => setAddPerson({ ...addPerson, age: e.target.value })}
-                    />
-                </Form.Item>
-                <Form.Item label="性别" >
-                    <Input type="text"
-                           value={addPerson.sex} placeholder="edit sex"
-                           onChange={(e) => setAddPerson({ ...addPerson, sex: e.target.value })}
-                    />
-                </Form.Item>
-                <Form.Item label="简介" >
-                    <Input type="text"
-                           value={addPerson.introduce} placeholder="edit introduce"
-                           onChange={(e) => setAddPerson({ ...addPerson, introduce: e.target.value })}
-                    />
-                </Form.Item>
+            <Modal title="添加人员" open={isModalOpen}
+                   onOk={() => {
+                       addOrUpdate(addPerson);
+                       setIsModalOpen(false);
+                       setAddPerson({
+                           name: null,
+                           age: null,
+                           sex: null,
+                           introduce: ""
+                       });
+                   }}
+                   onCancel={() => setIsModalOpen(false)}>
+                <Form onFinish={(values) => {
+                    console.log('Form values:', values);
+                }} onFinishFailed={(errorInfo) => {
+                    console.log('Form validation failed:', errorInfo);
+                }}>
+                    <Form.Item label="姓名" rules={[
+                        {
+                            required: true,
+                            message: '一个人必须有名字',
+                        },
+                    ]}>
+                        <Input type="text"
+                               value={addPerson.name} placeholder="edit name"
+                               onChange={(e) => setAddPerson({...addPerson, name: e.target.value})}
+                        />
+                    </Form.Item>
+                    <Form.Item label="年龄">
+                        <Input type="text"
+                               value={addPerson.age} placeholder="edit age"
+                               onChange={(e) => setAddPerson({...addPerson, age: e.target.value})}
+                        />
+                    </Form.Item>
+                    <Form.Item label="性别">
+                        <Radio.Group value={addPerson.sex}
+                                     onChange={(e) => setAddPerson({...addPerson, sex: e.target.value})}>
+                            <Radio value={1}> 男 </Radio>
+                            <Radio value={2}> 女 </Radio>
+                        </Radio.Group>
+                    </Form.Item>
+                    <Form.Item label="简介">
+                        <Input type="text"
+                               value={addPerson.introduce} placeholder="edit introduce"
+                               onChange={(e) => setAddPerson({...addPerson, introduce: e.target.value})}
+                        />
+                    </Form.Item>
+                </Form>
             </Modal>
         </Form>
     );
@@ -102,19 +123,23 @@ function SearchBar({param, setParam, setPersons, addOrUpdate}) {
 function PersonTable({persons, success, error, contextHolder, addOrUpdate}) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editPerson, setEditPerson] = useState({
-        id:null,
+        id: null,
         name: null,
         age: null,
         sex: null,
         introduce: ""
     });
-    const remove = (id) => {
-        const param = {
-            id: id
-        }
-        axios.post("http://localhost:8080/person/delete", param).then(response => {
-            success(response.data.msg)
-        })
+    const deleteConfirm = (record) => {
+        Modal.confirm({
+            title: '确认删除',
+            icon: <ExclamationCircleOutlined/>,
+            content: `确定要删除 ${record.name} 吗？`,
+            okText: '确认',
+            cancelText: '取消',
+            onOk() {
+                remove(record.id)
+            },
+        });
     };
 
     const columns = [
@@ -132,6 +157,11 @@ function PersonTable({persons, success, error, contextHolder, addOrUpdate}) {
             title: '性别',
             dataIndex: 'sex',
             key: 'sex',
+            render: (_, record) => (
+                <>
+                    <Tag color={record.sex === 1 ? 'geekblue' : 'green'}>{record.sex === 1 ? '男' : '女'}</Tag>
+                </>
+            ),
         },
         {
             title: '介绍',
@@ -152,50 +182,62 @@ function PersonTable({persons, success, error, contextHolder, addOrUpdate}) {
                         addOrUpdate(editPerson);
                         setIsModalOpen(false);
                     }} onCancel={() => setIsModalOpen(false)}>
-                        <Form.Item label="姓名" >
+                        <Form.Item label="姓名">
                             <Input type="text"
                                    value={editPerson.name} placeholder="edit name"
-                                   onChange={(e) => setEditPerson({ ...editPerson, name: e.target.value })}
+                                   onChange={(e) => setEditPerson({...editPerson, name: e.target.value})}
                             />
                         </Form.Item>
-                        <Form.Item label="年龄" >
+                        <Form.Item label="年龄">
                             <Input type="text"
                                    value={editPerson.age} placeholder="edit age"
-                                   onChange={(e) => setEditPerson({ ...editPerson, age: e.target.value })}
+                                   onChange={(e) => setEditPerson({...editPerson, age: e.target.value})}
                             />
                         </Form.Item>
-                        <Form.Item label="性别" >
-                            <Input type="text"
-                                   value={editPerson.sex} placeholder="edit sex"
-                                   onChange={(e) => setEditPerson({ ...editPerson, sex: e.target.value })}
-                            />
+                        <Form.Item label="性别">
+                            <Radio.Group value={editPerson.sex} disabled={true}
+                                         onChange={(e) => setEditPerson({...editPerson, sex: e.target.value})}>
+                                <Radio value={1}> 男 </Radio>
+                                <Radio value={2}> 女 </Radio>
+                            </Radio.Group>
                         </Form.Item>
-                        <Form.Item label="简介" >
+                        <Form.Item label="简介">
                             <Input type="text"
                                    value={editPerson.introduce} placeholder="edit introduce"
-                                   onChange={(e) => setEditPerson({ ...editPerson, introduce: e.target.value })}
+                                   onChange={(e) => setEditPerson({...editPerson, introduce: e.target.value})}
                             />
                         </Form.Item>
                     </Modal>
-                    <Button onClick={() => {remove(record.id)}}>删除</Button>
+                    <Button danger onClick={() => {
+                        deleteConfirm(record)
+                    }}>删除</Button>
                 </Space>
             ),
         },
     ];
-    return(
-        <Table columns={columns} dataSource={persons} rowKey="id" />
+
+    const remove = (id) => {
+        const param = {
+            id: id
+        }
+        axios.post("http://localhost:8080/person/delete", param).then(response => {
+            success(response.data.msg)
+        })
+    };
+    return (
+        <Table columns={columns} dataSource={persons} rowKey="id"/>
     );
 }
 
 export default function App() {
     const [persons, setPersons] = useState([]);
-    const [param, setParam] = useState({name:"", sex:null});
+    const [messageApi, contextHolder] = message.useMessage();
+
     const addOrUpdate = (record) => {
         axios.post("http://localhost:8080/person/insertOrUpdate", record).then(response => {
             success(response.data.msg)
         });
     };
-    const [messageApi, contextHolder] = message.useMessage();
     const success = (msg) => {
         messageApi.open({
             type: 'success',
@@ -212,8 +254,6 @@ export default function App() {
     return (
         <div>
             <SearchBar
-                param={param}
-                setParam={setParam}
                 setPersons={setPersons}
                 addOrUpdate={addOrUpdate}/>
             <PersonTable

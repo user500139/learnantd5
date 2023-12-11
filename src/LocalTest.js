@@ -62,10 +62,10 @@ export default function MyApp() {
                     remember: true,
                 }}
                 onFinish={(values) => {
-                    console.log('Success:', values);
+                    console.log('Success:', JSON.stringify(values));
                 }}
                 onFinishFailed={(errorInfo) => {
-                    console.log('Failed:', errorInfo);
+                    console.log('Failed:', JSON.stringify(errorInfo));
                 }}
                 autoComplete="off"
             >

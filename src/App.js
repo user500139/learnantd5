@@ -9,11 +9,6 @@ import {
     RadiusUprightOutlined,
 } from '@ant-design/icons';
 
-/**
- * todo list
- * 5.编辑框增加必选功能 简单需求竟遇卡点！？ modal组件与form组件组合实现弹窗编辑 提交使用modal组件的onOK而不能使用form组件的submit 导致不能和form组件的onFinish回调联动
- */
-
 function SearchBar({param, setParam, search, addOrUpdate, notificationContextHolder}) {
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
